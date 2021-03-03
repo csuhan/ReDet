@@ -8,7 +8,7 @@ The specific version is [4e6875d](https://github.com/open-mmlab/mmclassification
 
 |         Model                                               |Group      | Top-1 (%) | Top-5 (%) | Download |
 |:-----------------------------------------------------------:|:---------:|:---------:|:---------:|:--------:|
-| [ReResNet-50](configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     | [model](#) &#124; [log](#) |
+| [ReResNet-50](configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     | [model](https://drive.google.com/file/d/1UCTz9hsT7F-pOBexJUl06rWsC40JQevb/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing) |
 
 
 ## Installation
