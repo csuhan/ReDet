@@ -57,6 +57,10 @@ python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}]
 
 # multi-gpu testing
 ./tools/dist_test.sh ${CONFIG_FILE} ${CHECKPOINT_FILE} ${GPU_NUM} [--out ${RESULT_FILE}]
+
+# If you want to test ReResNet under Cyclic group C_4 (default C_8), you need to pass the ENV: Orientation=4
+# See mmcls/models/backbones/re_resnet.py
+Orientation=4 python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}]
 ```
 
 Optional arguments:
@@ -89,6 +93,10 @@ evaluation = dict(interval=12)  # This evaluate the model per 12 epoch.
 
 ```shell
 python tools/train.py ${CONFIG_FILE} [optional arguments]
+
+# If you want to train ReResNet under Cyclic group C_4 (default C_8), you need to pass the ENV: Orientation=4
+# See mmcls/models/backbones/re_resnet.py
+Orientation=4 python tools/train.py ${CONFIG_FILE} [optional arguments]
 ```
 
 If you want to specify the working directory in the command, you can add an argument `--work_dir ${YOUR_WORK_DIR}`.
