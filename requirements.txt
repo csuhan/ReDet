@@ -1,0 +1,10 @@
+Cython
+numpy
+mmcv==0.2.13
+shapely
+tqdm
+matplotlib
+terminaltables
+pycocotools
+pillow==6.2.2
+e2cnn
