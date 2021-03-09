@@ -69,34 +69,4 @@ Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage.
   booktitle = {Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)},
   year = {2021}
 }
-
-@article{han2020align,
-  title = {Align Deep Features for Oriented Object Detection},
-  author = {Han, Jiaming and Ding, Jian and Li, Jie and Xia, Gui-Song},
-  journal = {arXiv preprint arXiv:2008.09397},
-  year = {2020}
-}
-
-@inproceedings{Ding_2019_CVPR,
-  author = {Ding, Jian and Xue, Nan and Long, Yang and Xia, Gui-Song and Lu, Qikai},
-  title = {Learning RoI Transformer for Oriented Object Detection in Aerial Images},
-  booktitle = {Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)},
-  month = {June},
-  year = {2019}
-}
-
-@inproceedings{xia2018dota,
-  title={DOTA: A large-scale dataset for object detection in aerial images},
-  author={Xia, Gui-Song and Bai, Xiang and Ding, Jian and Zhu, Zhen and Belongie, Serge and Luo, Jiebo and Datcu, Mihai and Pelillo, Marcello and Zhang, Liangpei},
-  booktitle={Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)},
-  pages={3974--3983},
-  year={2018}
-}
-
-@article{chen2019mmdetection,
-  title={MMDetection: Open mmlab detection toolbox and benchmark},
-  author={Chen, Kai and Wang, Jiaqi and Pang, Jiangmiao and Cao, Yuhang and Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and Liu, Ziwei and Xu, Jiarui and others},
-  journal={arXiv preprint arXiv:1906.07155},
-  year={2019}
-}
 ```
