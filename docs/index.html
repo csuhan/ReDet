@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+
+
+<!-- === Header Starts === -->
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>ReDet</title>
+
+    <link href="./assets/bootstrap.min.css" rel="stylesheet">
+    <link href="./assets/font.css" rel="stylesheet" type="text/css">
+    <link href="./assets/style.css" rel="stylesheet" type="text/css">
+</head>
+<!-- === Header Ends === -->
+
+
+<body>
+
+
+<!-- === Home Section Starts === -->
+<div class="section">
+    <!-- === Title Starts === -->
+    <div class="header">
+        <div class="title" , style="padding-top: 10pt;">
+            ReDet: A Rotation-equivariant Detector for Aerial Object Detection
+        </div>
+    </div>
+    <!-- === Title Ends === -->
+    <div class="author">
+        <a href="https://csuhan.com/" target="_blank">Jiaming Han<sup>*</sup></a>,&nbsp;
+        <a href="https://dingjiansw101.github.io/" target="_blank">Jian Ding<sup>*</sup></a>,&nbsp;
+        <a href="https://cherubicxn.github.io/" target="_blank">Nan Xue</a>,&nbsp;
+        <a href="http://www.captain-whu.com/xia_En.html" target="_blank">Gui-Song Xia<sup>†</sup></a>
+    </div>
+    <div class="institution">
+        <a href="http://www.captain-whu.com/">CAPTAIN</a>, <a href="https://www.whu.edu.cn/">Wuhan University</a>
+    </div>
+    <div class="link">
+        <a href="#" target="_blank">[Paper]</a>&nbsp;
+        <a href="https://github.com/csuhan/ReDet" target="_blank">[Code]</a>&nbsp;
+    </div>
+    <div class="teaser">
+        <img src="imgs/redet_fig1.png" style="width: 80%;">
+    </div>
+</div>
+<!-- === Home Section Ends === -->
+
+
+<div class="section">
+    <div class="title">Abstract</div>
+    <div class="body">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Recently, object detection in aerial images has gained much
+        attention in computer vision. Different from objects in natural images, aerial objects are often distributed
+        with arbitrary orientation.
+        Therefore, the detector requires more parameters to encode the orientation information, which are often highly
+        redundant and inefficient.
+        Moreover, as ordinary CNNs do not explicitly model the orientation variation, large amounts of rotation
+        augmented data is needed to train an accurate object detector.
+        In this paper, we propose a Rotation-equivariant Detector (ReDet) to address these issues, which explicitly
+        encodes rotation equivariance and rotation invariance.
+        More precisely, we incorporate rotation equivariant networks into the detector to extract rotation-equivariant
+        features, which can accurately predict the orientation and lead to a huge reduction of model size.
+        Based on the rotation-equivariant features, we also present Rotation-invariant RoI Align (RiRoI Align), which
+        adaptively extracts rotation-invariant features from equivariant features according to the orientation of RoI.
+        Extensive experiments on several challenging aerial image datasets DOTA-v1.0, DOTA-v1.5 and HRSC2016, show that
+        our method can achieve state-of-the-art performance on the task of aerial object detection.
+        Compared with previous best results, our ReDet gains 1.2, 3.5 and 2.6 mAP on DOTA-v1.0, DOTA-v1.5 and HRSC2016
+        respectively while reducing the number of parameters by 60% (313 Mb vs. 121 Mb).
+    </div>
+</div>
+
+
+<div class="section">
+    <div class="title">Contributions</div>
+    <div class="body">
+        <ul>
+            <li>We propose a Rotation-equivariant Detector for high-quality aerial object detection, which encodes both rotation equivariance and rotation invariance. To our best knowledge, it is the first time that rotation equivariance has been systematically introduced into oriented object detection.</li>
+            <li>We design a novel RiRoI Align to extract rotation-invariant features from rotation-equivariant features. Different from other RRoI warping methods, RiRoI Align produces completely rotation-invariant features in both spatial and orientation dimensions.</li>
+            <li>Our method achieves the state-of-the-art 80.10, 76.80 and 90.46 mAP on DOTA-v1.0, DOTA-v1.5 and HRSC2016, respectively. Compared with previous best results, our method gains 1.2, 3.5 and 2.6 mAP improvements. Compared with the baseline, our method shows consistent and substantial improvements and reduces the number of parameters by 60% (313 Mb vs. 121 Mb). Moreover, our method achieves better model size vs. accuracy trade-off.</li>
+        </ul>
+    </div>
+</div>
+
+
+<div class="section">
+    <div class="title">Network</div>
+    <div class="body">
+        <div class="teaser">
+            <img src="imgs/network2.png" style="width: 97%;">
+        </div>
+    </div>
+</div>
+
+
+<div class="section">
+    <div class="title">Results</div>
+    <div class="body">
+        <div class="teaser">
+            <img src="imgs/table_dota1.png" style="width: 97%;">
+            <img src="imgs/table_dota15.png" style="width: 97%;">
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="title">Visualization</div>
+    <div class="body">
+        <div class="teaser">
+            <img src="imgs/dota_results.jpg" style="width: 97%;">
+        </div>
+    </div>
+</div>
+
+
+
+<!-- === Reference Section Starts === -->
+<div class="section">
+    <div class="bibtex">BibTeX</div>
+    <pre>
+@inproceedings{han2021ReDet,
+  author = {Han, Jiaming and Ding, Jian and Xue, Nan and Xia, Gui-Song},
+  title = {ReDet: A Rotation-equivariant Detector for Aerial Object Detection},
+  booktitle = {Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)},
+  year = {2021}
+}
+</pre>
+
+</div>
+<!-- === Reference Section Ends === -->
+
+
+</body>
+</html>
