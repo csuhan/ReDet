@@ -1,6 +1,6 @@
 /* Body */
 body {
-  background: #e3e5e8;
+  /*background: #e3e5e8;*/
   color: #ffffff;
   font-family: 'Times New Roman', 'Lato', Verdana, Helvetica, sans-serif;
   font-weight: 300;
@@ -32,7 +32,7 @@ pre {
   border: 1pt hidden #000;
   text-align: justify;
   color: #000000;
-  background: #ffffff;
+  /*background: #ffffff;*/
 }
 
 /* Header (Title and Logo) */
