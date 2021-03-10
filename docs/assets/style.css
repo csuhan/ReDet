@@ -2,7 +2,7 @@
 body {
   background: #e3e5e8;
   color: #ffffff;
-  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-family: 'Times New Roman', 'Lato', Verdana, Helvetica, sans-serif;
   font-weight: 300;
   font-size: 14pt;
 }
@@ -27,7 +27,7 @@ pre {
 .section {
   width: 768pt;
   min-height: 100pt;
-  margin: 15pt auto;
+  margin: 5pt auto;
   padding: 20pt 30pt;
   border: 1pt hidden #000;
   text-align: justify;
