@@ -32,7 +32,7 @@ If you want to train and use ReResNet in your own project, please check out [ReD
 
 |         Model                                               |Group      | Top-1 (%) | Top-5 (%) | Download |
 |:-----------------------------------------------------------:|:---------:|:---------:|:---------:|:--------:|
-| [ReR50](configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     | [model](https://drive.google.com/file/d/1UCTz9hsT7F-pOBexJUl06rWsC40JQevb/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing)|
+| [ReR50](https://github.com/csuhan/ReDet/blob/ReDet_mmcls/configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     | [model](https://drive.google.com/file/d/1UCTz9hsT7F-pOBexJUl06rWsC40JQevb/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing)|
 
 
 * **Object Detection**
