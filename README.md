@@ -4,7 +4,7 @@
 
 > **[ReDet: A Rotation-equivariant Detector for Aerial Object Detection (CVPR2021)](#)**,            
 > Jiaming Han<sup>\*</sup>, Jian Ding<sup>\*</sup>, Nan Xue, Gui-Song Xia<sup>†</sup>,        
-> arXiv preprint ([coming soon](#)).
+> arXiv preprint ([arXiv:2103.07733](https://arxiv.org/pdf/2103.07733.pdf)).
 
 The repo is based on [AerialDetection](https://github.com/dingjiansw101/AerialDetection) and [mmdetection](https://github.com/open-mmlab/mmdetection).
 [AerialDetection](https://github.com/dingjiansw101/AerialDetection) is a powerful framework for object detection in aerial images, which contains a lot of useful algorithms and tools.
