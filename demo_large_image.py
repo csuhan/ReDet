@@ -1,4 +1,3 @@
-import DOTA_devkit.polyiou as polyiou
 import cv2
 import math
 import mmcv
@@ -6,9 +5,11 @@ import numpy as np
 import os
 import pdb
 from mmcv import Config
-from mmdet.apis import init_detector, inference_detector, show_result, draw_poly_detections
-from mmdet.datasets import get_dataset
 from tqdm import tqdm
+
+import DOTA_devkit.polyiou as polyiou
+from mmdet.apis import init_detector, inference_detector, draw_poly_detections
+from mmdet.datasets import get_dataset
 
 dota15_colormap = [
     (54, 67, 244),
