@@ -142,4 +142,4 @@ if __name__ == '__main__':
         print(img_name)
         img_path = os.path.join(img_dir, img_name)
         out_path = os.path.join(out_dir, img_name)
-        roitransformer.inference_single_vis(img_path, out_path, (1024, 1024), (3072, 3072))
+        model.inference_single_vis(img_path, out_path, (1024, 1024), (3072, 3072))
