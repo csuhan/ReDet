@@ -20,7 +20,6 @@ version_file = 'mmdet/version.py'
 
 
 def get_git_hash():
-
     def _minimal_ext_cmd(cmd):
         # construct minimal environment
         env = {}
@@ -80,7 +79,6 @@ def get_version():
     return locals()['__version__']
 
 
-
 if __name__ == '__main__':
     write_version_py()
     setup(
@@ -107,7 +105,8 @@ if __name__ == '__main__':
         setup_requires=['pytest-runner'],
         tests_require=['pytest'],
         install_requires=[
-            'mmcv>=0.2.6', 'numpy', 'matplotlib', 'six', 'terminaltables',
-            'pycocotools'
+            'mmcv==0.2.13', 'numpy', 'shapely',
+            'tqdm', 'pillow==6.2.2', 'matplotlib',
+            'six', 'terminaltables', 'pycocotools', 'e2cnn'
         ],
         zip_safe=False)
