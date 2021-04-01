@@ -99,8 +99,9 @@ def prepare(srcpath, dstpath):
                                                         num_process=32)
     split_test.splitdata(1)
 
+    # Here we do not include difficult examples
     DOTA2COCOTrain(os.path.join(dstpath, 'trainval1024'), os.path.join(
-        dstpath, 'trainval1024', 'DOTA_trainval1024.json'), wordname_15, difficult='-1')
+        dstpath, 'trainval1024', 'DOTA_trainval1024.json'), wordname_15, difficult='2')
     DOTA2COCOTest(os.path.join(dstpath, 'test1024'), os.path.join(
         dstpath, 'test1024', 'DOTA_test1024.json'), wordname_15)
 
