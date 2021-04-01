@@ -1,15 +1,16 @@
+import ImgSplit_multi_process
+import SplitOnlyImage_multi_process
 import argparse
 import os
 import shutil
-from multiprocessing import Pool
-
-import ImgSplit_multi_process
-import SplitOnlyImage_multi_process
 import utils as util
 from DOTA2COCO import DOTA2COCOTest, DOTA2COCOTrain
+from multiprocessing import Pool
 
-wordname_15 = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-               'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+wordname_15 = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship',
+               'tennis-court',
+               'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool',
+               'helicopter']
 
 
 def parse_args():
@@ -98,8 +99,9 @@ def prepare(srcpath, dstpath):
                                                         num_process=32)
     split_test.splitdata(1)
 
+    # Here we do not include difficult examples
     DOTA2COCOTrain(os.path.join(dstpath, 'trainval1024'), os.path.join(
-        dstpath, 'trainval1024', 'DOTA_trainval1024.json'), wordname_15, difficult='-1')
+        dstpath, 'trainval1024', 'DOTA_trainval1024.json'), wordname_15, difficult='2')
     DOTA2COCOTest(os.path.join(dstpath, 'test1024'), os.path.join(
         dstpath, 'test1024', 'DOTA_test1024.json'), wordname_15)
 
