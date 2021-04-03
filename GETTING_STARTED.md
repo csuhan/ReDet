@@ -39,6 +39,41 @@ dota15_1024
 For data preparation with data augmentation, refer to "DOTA_devkit/prepare_dota1_5_v2.py"
 
 
+## Prepare HRSC2016 dataset.
+
+First, make sure your initial data are in the following structure.
+
+```
+data/HRSC2016
+├── Train
+│   ├──AllImages
+│   └── Annotations
+└── Test
+│   ├──AllImages
+│   └── Annotations
+```
+
+Then you need to convert HRSC2016 to DOTA's format, i.e., 
+rename `AllImages` to `images`, convert xml `Annotations` to DOTA's `txt` format.
+Here we provide a script from s2anet: [HRSC2DOTA.py](https://github.com/csuhan/s2anet/blob/original_version/DOTA_devkit/HRSC2DOTA.py). It will be added to this repo later.
+After that, your `data/HRSC2016` should contain the following folders.
+
+```
+data/HRSC2016
+├── Train
+│   ├──images
+│   └── labelTxt
+└── Test
+    └── images
+```
+
+Then we need to generate `json` labels with COCO's format.
+ 
+```
+python DOTA_devkit/HRSC20162COCO.py
+```
+
+
 ## Inference with pretrained models
 
 
@@ -86,6 +121,19 @@ python tools/test.py configs/ReDet/ReDet_re50_refpn_1x_dota15.py \
 ```
 python tools/parse_results.py --config configs/ReDet/ReDet_re50_refpn_1x_dota15.py --type OBB
 ```
+
+4. Test and evaluate ReDet on HRSC2016.
+```shell
+# generate results
+python tools/test.py configs/ReDet/ReDet_re50_refpn_3x_hrsc2016.py \
+    work_dirs/ReDet_re50_refpn_3x_hrsc2016/ReDet_re50_refpn_3x_hrsc2016-d1b4bd29.pth \ 
+    --out work_dirs/ReDet_re50_refpn_3x_hrsc2016/results.pkl
+
+# evaluation
+# remeber to modify the results path in hrsc2016_evaluation.py
+python DOTA_devkit/hrsc2016_evaluation.py
+```
+
 
 ### Demo of inference in a large size image.
 
