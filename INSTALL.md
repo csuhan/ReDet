@@ -30,6 +30,7 @@ conda install pytorch=1.3.1 torchvision cudatoolkit=10.0 -c pytorch -y
 Note:
 1. If you want to use Pytorch>1.5, you have to made some modifications to the `cuda ops`. See [here](https://github.com/csuhan/ReDet/issues/1) for a reference.
 2. There is a known [bug](https://github.com/csuhan/ReDet/issues/4) happened to some users but not all (As I have successfully run it on V100 and Titan Xp). If it occurs, please refer to [here](https://github.com/csuhan/ReDet/issues/4).
+3. If you want to use Python<=3.6, you need to install [e2cnn@legacy_py3.6](https://github.com/QUVA-Lab/e2cnn/tree/legacy_py3.6) mamually, see [here](https://github.com/csuhan/ReDet/issues/14) for an instruction.
 
 c. Clone the ReDet repository.
 
