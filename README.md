@@ -20,6 +20,7 @@ Extensive experiments on several challenging aerial image datasets DOTA-v1.0, DO
 Compared with previous best results, our ReDet gains 1.2, 3.5 and 2.6 mAP on DOTA-v1.0, DOTA-v1.5 and HRSC2016 respectively while reducing the number of parameters by 60% (313 Mb vs. 121 Mb).
 ## Changelog
 
+* **2021-04-13**. Update our [pretrained ReResNet](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view) and fix by https://github.com/csuhan/ReDet/commit/88f8170db12a34ec342ab61571db217c9589888d. For the users that can not reach our reported mAP, please download it and train again.
 * **2021-03-09**. Code released.
 
 ## Benchmark and model zoo
