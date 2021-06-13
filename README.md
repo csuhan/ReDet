@@ -65,10 +65,12 @@ Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage.
 ## Citation
 
 ```
-@inproceedings{han2021ReDet,
-  author = {Han, Jiaming and Ding, Jian and Xue, Nan and Xia, Gui-Song},
-  title = {ReDet: A Rotation-equivariant Detector for Aerial Object Detection},
-  booktitle = {Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)},
-  year = {2021}
+@InProceedings{han2021ReDet,
+    author    = {Han, Jiaming and Ding, Jian and Xue, Nan and Xia, Gui-Song},
+    title     = {ReDet: A Rotation-equivariant Detector for Aerial Object Detection},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2021},
+    pages     = {2786-2795}
 }
 ```
