@@ -39,7 +39,7 @@ python tools/convert_re_resnet_to_torch.py configs/re_resnet/re_resnet50_c8_batc
 Now, we can test the accuracy with a standard ResNet.
 ```
 bash tools/dist_test.sh configs/imagenet/resnet50_batch256.py work_dirs/re_resnet50_c8_batch256/epoch_100_torch.pth 8
-``
+```
 
 
 ## Citation
