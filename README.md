@@ -8,9 +8,13 @@ The specific version is [4e6875d](https://github.com/open-mmlab/mmclassification
 
 |         Model                                               |Group      | Top-1 (%) | Top-5 (%) | Download |
 |:-----------------------------------------------------------:|:---------:|:---------:|:---------:|:--------:|
-| [ReResNet-50](configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     | [model](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing)|
+| [ReResNet-50](configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     |[raw](https://drive.google.com/file/d/1_d2igSp0wM8ypxTM1S14f5kCVjEyE6iI/view?usp=sharing) &#124; [publish](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing)|
 
-*Alternative download link: [baiduyun](https://pan.baidu.com/s/1ENIkUVB_5-QRQhr0Vl-FMw) with extracting code `ABCD`.
+**Note**:
+
+* Alternative download link: [baiduyun](https://pan.baidu.com/s/1ENIkUVB_5-QRQhr0Vl-FMw) with extracting code `ABCD`.
+* The [raw](https://drive.google.com/file/d/1_d2igSp0wM8ypxTM1S14f5kCVjEyE6iI/view?usp=sharing) checkpoint is used to test the accuracy on ImageNet. The [publish](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view?usp=sharing) model is used for downstream tasks, e.g., object detection. We convert the raw model to publish model by [tools/publish_model.py](tools/publish_model.py).
+
 
 ## Installation
 
@@ -21,6 +25,21 @@ Please refer to [install.md](docs/install.md) for installation and dataset prepa
 
 Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMClassification. There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
 
+### Convert ReResNet to standard Pytorch layers
+We can export ReResNet to a standard ResNet by [tools/convert_re_resnet_to_torch.py](tools/convert_re_resnet_to_torch.py).
+
+First, download the checkpoint from [here](https://drive.google.com/file/d/1_d2igSp0wM8ypxTM1S14f5kCVjEyE6iI/view?usp=sharing) and put it to `work_dirs/re_resnet50_c8_batch256/epoch_100.pth`.
+
+Then, convert the raw checkpoint to a standard checkpoint for ResNet.
+```
+python tools/convert_re_resnet_to_torch.py configs/re_resnet/re_resnet50_c8_batch256.py \
+        work_dirs/re_resnet50_c8_batch256/epoch_100.pth work_dirs/re_resnet50_c8_batch256/epoch_100_torch.pth
+```
+
+Now, we can test the accuracy with a standard ResNet.
+```
+bash tools/dist_test.sh configs/imagenet/resnet50_batch256.py work_dirs/re_resnet50_c8_batch256/epoch_100_torch.pth 8
+``
 
 
 ## Citation

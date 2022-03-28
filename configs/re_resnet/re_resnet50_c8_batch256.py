@@ -10,7 +10,9 @@ model = dict(
         depth=50,
         num_stages=4,
         out_indices=(3, ),
-        style='pytorch'),
+        style='pytorch',
+        orientation=8,
+        fixparams=False),
     neck=dict(type='GlobalAveragePooling'),
     head=dict(
         type='LinearClsHead',
