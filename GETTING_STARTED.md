@@ -4,7 +4,6 @@ This page provides basic tutorials about the usage of ReDet.
 For installation instructions, please see [INSTALL.md](INSTALL.md).
 
 
-
 ## Prepare DOTA dataset.
 It is recommended to symlink the dataset root to `ReDet/data`.
 
@@ -15,12 +14,12 @@ First, make sure your initial data are in the following structure.
 data/dota15
 ├── train
 │   ├──images
-│   └── labelTxt
+│   └──labelTxt
 ├── val
-│   ├── images
-│   └── labelTxt
+│   ├──images
+│   └──labelTxt
 └── test
-    └── images
+    └──images
 ```
 Split the original images and create COCO format json. 
 ```
@@ -30,11 +29,11 @@ Then you will get data in the following structure
 ```
 dota15_1024
 ├── test1024
-│   ├── DOTA_test1024.json
-│   └── images
+│   ├──DOTA_test1024.json
+│   └──images
 └── trainval1024
-     ├── DOTA_trainval1024.json
-     └── images
+     ├──DOTA_trainval1024.json
+     └──images
 ```
 For data preparation with data augmentation, refer to "DOTA_devkit/prepare_dota1_5_v2.py"
 
@@ -47,16 +46,15 @@ First, make sure your initial data are in the following structure.
 data/HRSC2016
 ├── Train
 │   ├──AllImages
-│   └── Annotations
+│   └──Annotations
 └── Test
 │   ├──AllImages
-│   └── Annotations
+│   └──Annotations
 ```
 
 Then you need to convert HRSC2016 to DOTA's format, i.e., 
 rename `AllImages` to `images`, convert xml `Annotations` to DOTA's `txt` format.
-Here we provide a script from s2anet: [HRSC2DOTA.py](https://github.com/csuhan/s2anet/blob/original_version/DOTA_devkit/HRSC2DOTA.py). It will be added to this repo later.
-After that, your `data/HRSC2016` should contain the following folders.
+Here we provide a script from s2anet: [HRSC2DOTA.py](https://github.com/csuhan/s2anet/blob/original_version/DOTA_devkit/HRSC2DOTA.py). Now, your `data/HRSC2016` should contain the following folders.
 
 ```
 data/HRSC2016
@@ -90,10 +88,6 @@ python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}]
 
 # multi-gpu testing
 ./tools/dist_test.sh ${CONFIG_FILE} ${CHECKPOINT_FILE} ${GPU_NUM} [--out ${RESULT_FILE}]
-
-# If you want to test ReDet under Cyclic group C_4 (default C_8), you need to pass the ENV: Orientation=4
-# See mmdet/models/backbones/re_resnet.py for details
-Orientation=4 python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}]
 ```
 
 Optional arguments:
@@ -103,7 +97,7 @@ Examples:
 
 Assume that you have already downloaded the checkpoints to `work_dirs/`.
 
-1. Test ReDet.
+1. Test ReDet with 1 GPU.
 ```shell
 python tools/test.py configs/ReDet/ReDet_re50_refpn_1x_dota15.py \
     work_dirs/ReDet_re50_refpn_1x_dota15/ReDet_re50_refpn_1x_dota15-7f2d6dda.pth \ 
@@ -117,7 +111,7 @@ python tools/test.py configs/ReDet/ReDet_re50_refpn_1x_dota15.py \
     4 --out work_dirs/ReDet_re50_refpn_1x_dota15/results.pkl 
 ```
 
-3. Parse the results.pkl to the format needed for [DOTA evaluation](https://captain-whu.github.io/DOTA/evaluation.html)
+3. Parse results for [DOTA evaluation](https://captain-whu.github.io/DOTA/evaluation.html)
 ```
 python tools/parse_results.py --config configs/ReDet/ReDet_re50_refpn_1x_dota15.py --type OBB
 ```
@@ -134,6 +128,28 @@ python tools/test.py configs/ReDet/ReDet_re50_refpn_3x_hrsc2016.py \
 python DOTA_devkit/hrsc2016_evaluation.py
 ```
 
+### Convert ReResNet+ReFPN to standard Pytorch layers
+
+We provide a [script](tools/convert_ReDet_to_torch.py) to convert the pre-trained weights of ReResNet+ReFPN to standard Pytorch layers. Take ReDet on DOTA-v1.5 as an example.
+
+1. download pretrained weights at [here](https://drive.google.com/file/d/1AjG3-Db_hmZF1YSKRVnq8j_yuxzualRo/view?usp=sharing), and convert it to standard pytorch layers.
+```
+python tools/convert_ReDet_to_torch.py configs/ReDet/ReDet_re50_refpn_1x_dota15.py \
+        work_dirs/ReDet_re50_refpn_1x_dota15/ReDet_re50_refpn_1x_dota15-7f2d6dda.pth \
+        work_dirs/ReDet_re50_refpn_1x_dota15/ReDet_r50_fpn_1x_dota15.pth
+```
+
+2. use standard ResNet+FPN as the backbone of ReDet and test it on DOTA-v1.5.
+```
+mkdir work_dirs/ReDet_r50_fpn_1x_dota15
+
+bash ./tools/dist_test.sh configs/ReDet/ReDet_r50_fpn_1x_dota15.py \
+        work_dirs/ReDet_re50_refpn_1x_dota15/ReDet_r50_fpn_1x_dota15.pth 8 \
+        --out work_dirs/ReDet_r50_fpn_1x_dota15/results.pkl
+
+# submit parsed results to the evaluation server.
+python tools/parse_results.py --config configs/ReDet/ReDet_r50_fpn_1x_dota15.py
+```
 
 ### Demo of inference in a large size image.
 
@@ -159,10 +175,6 @@ to the GPU num, e.g., 0.01 for 4 GPUs and 0.04 for 16 GPUs.
 
 ```shell
 python tools/train.py ${CONFIG_FILE}
-
-# If you want to train a model under Cyclic group C_4 (default C_8), you need to pass the ENV: Orientation=4
-# See mmdet/models/backbones/re_resnet.py for details
-Orientation=4 python tools/train.py ${CONFIG_FILE}
 ```
 
 If you want to specify the working directory in the command, you can add an argument `--work_dir ${YOUR_WORK_DIR}`.
@@ -199,124 +211,3 @@ You can check [slurm_train.sh](tools/slurm_train.sh) for full arguments and envi
 If you have just multiple machines connected with ethernet, you can refer to
 pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
 Usually it is slow if you do not have high speed networking like infiniband.
-
-
-## How-to
-
-### Use my own datasets
-
-The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
-
-Here we show an example of adding a custom dataset of 5 classes, assuming it is also in COCO format.
-
-In `mmdet/datasets/my_dataset.py`:
-
-```python
-from .coco import CocoDataset
-
-
-class MyDataset(CocoDataset):
-
-    CLASSES = ('a', 'b', 'c', 'd', 'e')
-```
-
-In `mmdet/datasets/__init__.py`:
-
-```python
-from .my_dataset import MyDataset
-```
-
-Then you can use `MyDataset` in config files, with the same API as CocoDataset.
-
-
-It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
-Actually, we define a simple annotation format and all existing datasets are
-processed to be compatible with it, either online or offline.
-
-The annotation of a dataset is a list of dict, each dict corresponds to an image.
-There are 3 field `filename` (relative path), `width`, `height` for testing,
-and an additional field `ann` for training. `ann` is also a dict containing at least 2 fields:
-`bboxes` and `labels`, both of which are numpy arrays. Some datasets may provide
-annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `labels_ignore`
-to cover them.
-
-Here is an example.
-```
-[
-    {
-        'filename': 'a.jpg',
-        'width': 1280,
-        'height': 720,
-        'ann': {
-            'bboxes': <np.ndarray, float32> (n, 4),
-            'labels': <np.ndarray, float32> (n, ),
-            'bboxes_ignore': <np.ndarray, float32> (k, 4),
-            'labels_ignore': <np.ndarray, float32> (k, ) (optional field)
-        }
-    },
-    ...
-]
-```
-
-There are two ways to work with custom datasets.
-
-- online conversion
-
-  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
-  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`,
-  like [CocoDataset](mmdet/datasets/coco.py) and [VOCDataset](mmdet/datasets/voc.py).
-
-- offline conversion
-
-  You can convert the annotation format to the expected format above and save it to
-  a pickle or json file, like [pascal_voc.py](tools/convert_datasets/pascal_voc.py).
-  Then you can simply use `CustomDataset`.
-
-### Develop new components
-
-We basically categorize model components into 4 types.
-
-- backbone: usually a FCN network to extract feature maps, e.g., ResNet, MobileNet.
-- neck: the component between backbones and heads, e.g., FPN, PAFPN.
-- head: the component for specific tasks, e.g., bbox prediction and mask prediction.
-- roi extractor: the part for extracting RoI features from feature maps, e.g., RoI Align.
-
-Here we show how to develop new components with an example of MobileNet.
-
-1. Create a new file `mmdet/models/backbones/mobilenet.py`.
-
-```python
-import torch.nn as nn
-
-from ..registry import BACKBONES
-
-
-@BACKBONES.register
-class MobileNet(nn.Module):
-
-    def __init__(self, arg1, arg2):
-        pass
-
-    def forward(x):  # should return a tuple
-        pass
-```
-
-2. Import the module in `mmdet/models/backbones/__init__.py`.
-
-```python
-from .mobilenet import MobileNet
-```
-
-3. Use it in your config file.
-
-```python
-model = dict(
-    ...
-    backbone=dict(
-        type='MobileNet',
-        arg1=xxx,
-        arg2=xxx),
-    ...
-```
-
-For more information on how it works, you can refer to [TECHNICAL_DETAILS.md](TECHNICAL_DETAILS.md) (TODO).

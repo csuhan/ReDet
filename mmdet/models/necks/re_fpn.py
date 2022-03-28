@@ -1,93 +1,18 @@
-import e2cnn.nn as enn
 import math
 import os
+import warnings
+from collections import OrderedDict
+
+import e2cnn.nn as enn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import warnings
 from e2cnn import gspaces
 from mmcv.cnn import constant_init, kaiming_init, xavier_init
 
 from ..registry import NECKS
-
-# Set default Orientation=8, .i.e, the group C8
-# One can change it by passing the env Orientation=xx
-Orientation = 8
-# keep similar computation or similar params
-# One can change it by passing the env fixparams=True
-fixparams = False
-if 'Orientation' in os.environ:
-    Orientation = int(os.environ['Orientation'])
-if 'fixparams' in os.environ:
-    fixparams = True
-
-gspace = gspaces.Rot2dOnR2(N=Orientation)
-
-
-def regular_feature_type(gspace: gspaces.GSpace, planes: int):
-    """ build a regular feature map with the specified number of channels"""
-    assert gspace.fibergroup.order() > 0
-
-    N = gspace.fibergroup.order()
-    if fixparams:
-        planes *= math.sqrt(N)
-    planes = planes / N
-    planes = int(planes)
-    return enn.FieldType(gspace, [gspace.regular_repr] * planes)
-
-
-def trivial_feature_type(gspace: gspaces.GSpace, planes: int):
-    """ build a trivial feature map with the specified number of channels"""
-
-    if fixparams:
-        planes *= math.sqrt(gspace.fibergroup.order())
-
-    planes = int(planes)
-    return enn.FieldType(gspace, [gspace.trivial_repr] * planes)
-
-
-FIELD_TYPE = {
-    "trivial": trivial_feature_type,
-    "regular": regular_feature_type,
-}
-
-
-def convnxn(inplanes, outplanes, kernel_size=3, stride=1, padding=0, groups=1, bias=False, dilation=1):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    out_type = FIELD_TYPE['regular'](gspace, outplanes)
-    return enn.R2Conv(in_type, out_type, kernel_size,
-                      stride=stride,
-                      padding=padding,
-                      groups=groups,
-                      bias=bias,
-                      dilation=dilation,
-                      sigma=None,
-                      frequencies_cutoff=lambda r: 3 * r, )
-
-
-def ennReLU(inplanes, inplace=True):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    return enn.ReLU(in_type, inplace=inplace)
-
-
-def ennInterpolate(inplanes, scale_factor, mode='nearest', align_corners=False):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    return enn.R2Upsampling(in_type, scale_factor, mode=mode, align_corners=align_corners)
-
-
-def ennMaxPool(inplanes, kernel_size, stride=1, padding=0):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    return enn.PointwiseMaxPool(in_type, kernel_size=kernel_size, stride=stride, padding=padding)
-
-
-def build_conv_layer(cfg, *args, **kwargs):
-    layer = convnxn(*args, **kwargs)
-    return layer
-
-
-def build_norm_layer(cfg, num_features, postfix=''):
-    in_type = FIELD_TYPE['regular'](gspace, num_features)
-    return 'bn' + str(postfix), enn.InnerBatchNorm(in_type)
+from ..utils.enn_layers import (FIELD_TYPE, build_norm_layer, convnxn,
+                                ennInterpolate, ennMaxPool, ennReLU)
 
 
 class ConvModule(enn.EquivariantModule):
@@ -104,12 +29,17 @@ class ConvModule(enn.EquivariantModule):
                  norm_cfg=None,
                  activation='relu',
                  inplace=True,
-                 order=('conv', 'norm', 'act')):
+                 order=('conv', 'norm', 'act'),
+                 gspace=None,
+                 fixparams=False):
         super(ConvModule, self).__init__()
         assert conv_cfg is None or isinstance(conv_cfg, dict)
         assert norm_cfg is None or isinstance(norm_cfg, dict)
-        self.in_type = enn.FieldType(gspace, [gspace.regular_repr] * in_channels)
-        self.out_type = enn.FieldType(gspace, [gspace.regular_repr] * out_channels)
+        self.gspace = gspace
+        self.in_type = enn.FieldType(
+            gspace, [gspace.regular_repr] * in_channels)
+        self.out_type = enn.FieldType(
+            gspace, [gspace.regular_repr] * out_channels)
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.activation = activation
@@ -128,8 +58,8 @@ class ConvModule(enn.EquivariantModule):
         if self.with_norm and self.with_bias:
             warnings.warn('ConvModule has norm and bias at the same time')
         # build convolution layer
-        self.conv = build_conv_layer(
-            conv_cfg,
+        self.conv = convnxn(
+            gspace,
             in_channels,
             out_channels,
             kernel_size,
@@ -158,7 +88,8 @@ class ConvModule(enn.EquivariantModule):
                 norm_channels = in_channels
             if conv_cfg != None and conv_cfg['type'] == 'ORConv':
                 norm_channels = int(norm_channels * 8)
-            self.norm_name, norm = build_norm_layer(norm_cfg, norm_channels)
+            self.norm_name, norm = build_norm_layer(
+                norm_cfg, gspace, norm_channels)
             self.add_module(self.norm_name, norm)
 
         # build activation layer
@@ -168,7 +99,8 @@ class ConvModule(enn.EquivariantModule):
                 raise ValueError('{} is currently not supported.'.format(
                     self.activation))
             if self.activation == 'relu':
-                self.activate = ennReLU(out_channels, inplace=self.inplace)
+                self.activate = ennReLU(
+                    gspace, out_channels, inplace=self.inplace)
 
         # Use msra init by default
         self.init_weights()
@@ -196,6 +128,15 @@ class ConvModule(enn.EquivariantModule):
     def evaluate_output_shape(self, input_shape):
         return input_shape
 
+    def export(self):
+        self.eval()
+        submodules = []
+        for name, module in self._modules.items():
+            if hasattr(module, 'export'):
+                module = module.export()
+            submodules.append((name, module))
+        return torch.nn.ModuleDict(OrderedDict(submodules))
+
 
 @NECKS.register_module
 class ReFPN(nn.Module):
@@ -212,7 +153,9 @@ class ReFPN(nn.Module):
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 activation=None):
+                 activation=None,
+                 orientation=8,
+                 fixparams=False):
         super(ReFPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -220,6 +163,13 @@ class ReFPN(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.activation = activation
+
+        self.orientation = orientation
+        self.fixparams = fixparams
+        self.gspace = gspaces.Rot2dOnR2(orientation)
+        self.in_type = enn.FieldType(
+            self.gspace, [self.gspace.trivial_repr] * 3)
+
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
         self.fp16_enabled = False
@@ -236,9 +186,9 @@ class ReFPN(nn.Module):
         self.add_extra_convs = add_extra_convs
         self.extra_convs_on_inputs = extra_convs_on_inputs
 
-        self.lateral_convs = nn.ModuleList()
-        self.up_samples = nn.ModuleList()
-        self.fpn_convs = nn.ModuleList()
+        self.lateral_convs = enn.ModuleList()
+        self.up_samples = enn.ModuleList()
+        self.fpn_convs = enn.ModuleList()
 
         for i in range(self.start_level, self.backbone_end_level):
             l_conv = ConvModule(
@@ -248,8 +198,10 @@ class ReFPN(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg if not self.no_norm_on_lateral else None,
                 activation=self.activation,
-                inplace=False)
-            up_sample = ennInterpolate(out_channels, 2)
+                inplace=False,
+                gspace=self.gspace,
+                fixparams=fixparams)
+            up_sample = ennInterpolate(self.gspace, out_channels, 2)
             fpn_conv = ConvModule(
                 out_channels,
                 out_channels,
@@ -258,7 +210,9 @@ class ReFPN(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 activation=self.activation,
-                inplace=False)
+                inplace=False,
+                gspace=self.gspace,
+                fixparams=fixparams)
 
             self.lateral_convs.append(l_conv)
             self.up_samples.append(up_sample)
@@ -281,11 +235,13 @@ class ReFPN(nn.Module):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     activation=self.activation,
-                    inplace=False)
+                    inplace=False,
+                    gspace=self.gspace,
+                    fixparams=fixparams)
                 self.fpn_convs.append(extra_fpn_conv)
 
-        self.max_pools = nn.ModuleList()
-        self.relus = nn.ModuleList()
+        self.max_pools = enn.ModuleList()
+        self.relus = enn.ModuleList()
 
         used_backbone_levels = len(self.lateral_convs)
         if self.num_outs > used_backbone_levels:
@@ -293,11 +249,12 @@ class ReFPN(nn.Module):
             # (e.g., Faster R-CNN, Mask R-CNN)
             if not self.add_extra_convs:
                 for i in range(self.num_outs - used_backbone_levels):
-                    self.max_pools.append(ennMaxPool(out_channels, 1, stride=2))
+                    self.max_pools.append(
+                        ennMaxPool(self.gspace, out_channels, 1, stride=2))
             # add conv layers on top of original feature maps (RetinaNet)
             else:
                 for i in range(used_backbone_levels + 1, self.num_outs):
-                    self.relus.append(ennReLU(out_channels))
+                    self.relus.append(ennReLU(self.gspace, out_channels))
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
@@ -350,3 +307,12 @@ class ReFPN(nn.Module):
         outs = [out.tensor for out in outs]
 
         return tuple(outs)
+
+    def export(self):
+        self.eval()
+        submodules = []
+        for name, module in self._modules.items():
+            if hasattr(module, 'export'):
+                module = module.export()
+            submodules.append((name, module))
+        return torch.nn.ModuleDict(OrderedDict(submodules))

@@ -1,160 +1,25 @@
 """
-This file contains our implementation of ReResNet.
+Implementation of ReResNet V2.
 @author: Jiaming Han
 """
-import e2cnn.nn as enn
 import math
 import os
+from collections import OrderedDict
+
+import e2cnn.nn as enn
+import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from e2cnn import gspaces
-from mmcv.cnn import (constant_init, kaiming_init)
+from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from .base_backbone import BaseBackbone
 from ..builder import BACKBONES
-
-# Set default Orientation=8, .i.e, the group C8
-# One can change it by passing the env Orientation=xx
-Orientation = 8
-# keep similar computation or similar params
-# One can change it by passing the env fixparams=True
-fixparams = False
-if 'Orientation' in os.environ:
-    Orientation = int(os.environ['Orientation'])
-if 'fixparams' in os.environ:
-    fixparams = True
-print('ReResNet Orientation: {}\tFix Params: {}'.format(Orientation, fixparams))
-
-# define the equivariant group. We use C8 group by default.
-gspace = gspaces.Rot2dOnR2(N=Orientation)
-
-
-def regular_feature_type(gspace: gspaces.GSpace, planes: int):
-    """ build a regular feature map with the specified number of channels"""
-    assert gspace.fibergroup.order() > 0
-    N = gspace.fibergroup.order()
-    if fixparams:
-        planes *= math.sqrt(N)
-    planes = planes / N
-    planes = int(planes)
-    return enn.FieldType(gspace, [gspace.regular_repr] * planes)
-
-
-def trivial_feature_type(gspace: gspaces.GSpace, planes: int, fixparams: bool = True):
-    """ build a trivial feature map with the specified number of channels"""
-    if fixparams:
-        planes *= math.sqrt(gspace.fibergroup.order())
-    planes = int(planes)
-    return enn.FieldType(gspace, [gspace.trivial_repr] * planes)
-
-
-FIELD_TYPE = {
-    "trivial": trivial_feature_type,
-    "regular": regular_feature_type,
-}
-
-
-def conv7x7(inplanes, out_planes, stride=2, padding=3, bias=False):
-    """7x7 convolution with padding"""
-    in_type = enn.FieldType(gspace, inplanes * [gspace.trivial_repr])
-    out_type = FIELD_TYPE['regular'](gspace, out_planes)
-    return enn.R2Conv(in_type, out_type, 7,
-                      stride=stride,
-                      padding=padding,
-                      bias=bias,
-                      sigma=None,
-                      frequencies_cutoff=lambda r: 3 * r, )
-
-
-def conv3x3(inplanes, out_planes, stride=1, padding=1, groups=1, dilation=1):
-    """3x3 convolution with padding"""
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    out_type = FIELD_TYPE['regular'](gspace, out_planes)
-    return enn.R2Conv(in_type, out_type, 3,
-                      stride=stride,
-                      padding=padding,
-                      groups=groups,
-                      bias=False,
-                      dilation=dilation,
-                      sigma=None,
-                      frequencies_cutoff=lambda r: 3 * r,
-                      initialize=False)
-
-
-def conv1x1(inplanes, out_planes, stride=1):
-    """1x1 convolution"""
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    out_type = FIELD_TYPE['regular'](gspace, out_planes)
-    return enn.R2Conv(in_type, out_type, 1,
-                      stride=stride,
-                      bias=False,
-                      sigma=None,
-                      frequencies_cutoff=lambda r: 3 * r,
-                      initialize=False)
-
-
-def convnxn(inplanes, outplanes, kernel_size=3, stride=1, padding=0, groups=1, bias=False, dilation=1):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    out_type = FIELD_TYPE['regular'](gspace, outplanes)
-    return enn.R2Conv(in_type, out_type, kernel_size,
-                      stride=stride,
-                      padding=padding,
-                      groups=groups,
-                      bias=bias,
-                      dilation=dilation,
-                      sigma=None,
-                      frequencies_cutoff=lambda r: 3 * r, )
-
-
-def ennReLU(inplanes):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    return enn.ReLU(in_type, inplace=True)
-
-
-def ennAvgPool(inplanes, kernel_size=1, stride=None, padding=0, ceil_mode=False):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    return enn.PointwiseAvgPool(in_type, kernel_size, stride=stride, padding=padding, ceil_mode=ceil_mode)
-
-
-def ennMaxPool(inplanes, kernel_size, stride=1, padding=0):
-    in_type = FIELD_TYPE['regular'](gspace, inplanes)
-    return enn.PointwiseMaxPool(in_type, kernel_size=kernel_size, stride=stride, padding=padding)
-
-
-def build_conv_layer(cfg, *args, **kwargs):
-    layer = convnxn(*args, **kwargs)
-    return layer
-
-
-def build_norm_layer(cfg, num_features, postfix=''):
-    in_type = FIELD_TYPE['regular'](gspace, num_features)
-    return 'bn' + str(postfix), enn.InnerBatchNorm(in_type)
+from ..utils.enn_layers import FIELD_TYPE, build_norm_layer, conv1x1, conv3x3
+from .base_backbone import BaseBackbone
 
 
 class BasicBlock(enn.EquivariantModule):
-    """BasicBlock for ReResNet.
-
-    Args:
-        in_channels (int): Input channels of this block.
-        out_channels (int): Output channels of this block.
-        expansion (int): The ratio of ``out_channels/mid_channels`` where
-            ``mid_channels`` is the output channels of conv1. This is a
-            reserved argument in BasicBlock and should always be 1. Default: 1.
-        stride (int): stride of the block. Default: 1
-        dilation (int): dilation of convolution. Default: 1
-        downsample (nn.Module): downsample operation on identity branch.
-            Default: None.
-        style (str): `pytorch` or `caffe`. It is unused and reserved for
-            unified API with Bottleneck.
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
-        conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='BN')
-    """
-
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -165,10 +30,14 @@ class BasicBlock(enn.EquivariantModule):
                  style='pytorch',
                  with_cp=False,
                  conv_cfg=None,
-                 norm_cfg=dict(type='BN')):
+                 norm_cfg=dict(type='BN'),
+                 gspace=None,
+                 fixparams=False):
         super(BasicBlock, self).__init__()
-        self.in_type = FIELD_TYPE['regular'](gspace, in_channels)
-        self.out_type = FIELD_TYPE['regular'](gspace, out_channels)
+        self.in_type = FIELD_TYPE['regular'](
+            gspace, in_channels, fixparams=fixparams)
+        self.out_type = FIELD_TYPE['regular'](
+            gspace, out_channels, fixparams=fixparams)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.expansion = expansion
@@ -183,31 +52,31 @@ class BasicBlock(enn.EquivariantModule):
         self.norm_cfg = norm_cfg
 
         self.norm1_name, norm1 = build_norm_layer(
-            norm_cfg, self.mid_channels, postfix=1)
+            norm_cfg, gspace, self.mid_channels, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(
-            norm_cfg, out_channels, postfix=2)
+            norm_cfg, gspace, out_channels, postfix=2)
 
-        self.conv1 = build_conv_layer(
-            conv_cfg,
+        self.conv1 = conv3x3(
+            gspace,
             in_channels,
             self.mid_channels,
-            3,
             stride=stride,
             padding=dilation,
             dilation=dilation,
-            bias=False)
+            bias=False,
+            fixparams=fixparams)
         self.add_module(self.norm1_name, norm1)
-        self.relu1 = ennReLU(self.mid_channels)
-        self.conv2 = build_conv_layer(
-            conv_cfg,
+        self.relu1 = enn.ReLU(self.conv1.out_type, inplace=True)
+        self.conv2 = conv3x3(
+            gspace,
             self.mid_channels,
             out_channels,
-            3,
             padding=1,
-            bias=False)
+            bias=False,
+            fixparams=fixparams)
         self.add_module(self.norm2_name, norm2)
 
-        self.relu2 = ennReLU(out_channels)
+        self.relu2 = enn.ReLU(self.conv1.out_type, inplace=True)
         self.downsample = downsample
 
     @property
@@ -254,30 +123,18 @@ class BasicBlock(enn.EquivariantModule):
         else:
             return input_shape
 
+    def export(self):
+        self.eval()
+        submodules = []
+        # convert all the submodules if necessary
+        for name, module in self._modules.items():
+            if hasattr(module, 'export'):
+                module = module.export()
+            submodules.append((name, module))
+        return torch.nn.ModuleDict(OrderedDict(submodules))
+
 
 class Bottleneck(enn.EquivariantModule):
-    """Bottleneck block for ReResNet.
-
-    Args:
-        in_channels (int): Input channels of this block.
-        out_channels (int): Output channels of this block.
-        expansion (int): The ratio of ``out_channels/mid_channels`` where
-            ``mid_channels`` is the input/output channels of conv2. Default: 4.
-        stride (int): stride of the block. Default: 1
-        dilation (int): dilation of convolution. Default: 1
-        downsample (nn.Module): downsample operation on identity branch.
-            Default: None.
-        style (str): ``"pytorch"`` or ``"caffe"``. If set to "pytorch", the
-            stride-two layer is the 3x3 conv layer, otherwise the stride-two
-            layer is the first 1x1 conv layer. Default: "pytorch".
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
-        conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='BN')
-    """
-
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -288,11 +145,15 @@ class Bottleneck(enn.EquivariantModule):
                  style='pytorch',
                  with_cp=False,
                  conv_cfg=None,
-                 norm_cfg=dict(type='BN')):
+                 norm_cfg=dict(type='BN'),
+                 gspace=None,
+                 fixparams=False):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
-        self.in_type = FIELD_TYPE['regular'](gspace, in_channels)
-        self.out_type = FIELD_TYPE['regular'](gspace, out_channels)
+        self.in_type = FIELD_TYPE['regular'](
+            gspace, in_channels, fixparams=fixparams)
+        self.out_type = FIELD_TYPE['regular'](
+            gspace, out_channels, fixparams=fixparams)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.expansion = expansion
@@ -312,41 +173,41 @@ class Bottleneck(enn.EquivariantModule):
             self.conv2_stride = 1
 
         self.norm1_name, norm1 = build_norm_layer(
-            norm_cfg, self.mid_channels, postfix=1)
+            norm_cfg, gspace, self.mid_channels, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(
-            norm_cfg, self.mid_channels, postfix=2)
+            norm_cfg, gspace, self.mid_channels, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
-            norm_cfg, out_channels, postfix=3)
+            norm_cfg, gspace, out_channels, postfix=3)
 
-        self.conv1 = build_conv_layer(
-            conv_cfg,
+        self.conv1 = conv1x1(
+            gspace,
             in_channels,
             self.mid_channels,
-            kernel_size=1,
             stride=self.conv1_stride,
-            bias=False)
+            bias=False,
+            fixparams=fixparams)
         self.add_module(self.norm1_name, norm1)
-        self.relu1 = ennReLU(self.mid_channels)
-        self.conv2 = build_conv_layer(
-            conv_cfg,
+        self.relu1 = enn.ReLU(self.conv1.out_type, inplace=True)
+        self.conv2 = conv3x3(
+            gspace,
             self.mid_channels,
             self.mid_channels,
-            kernel_size=3,
             stride=self.conv2_stride,
             padding=dilation,
             dilation=dilation,
-            bias=False)
+            bias=False,
+            fixparams=fixparams)
 
         self.add_module(self.norm2_name, norm2)
-        self.relu2 = ennReLU(self.mid_channels)
-        self.conv3 = build_conv_layer(
-            conv_cfg,
+        self.relu2 = enn.ReLU(self.conv2.out_type, inplace=True)
+        self.conv3 = conv1x1(
+            gspace,
             self.mid_channels,
             out_channels,
-            kernel_size=1,
-            bias=False)
+            bias=False,
+            fixparams=fixparams)
         self.add_module(self.norm3_name, norm3)
-        self.relu3 = ennReLU(out_channels)
+        self.relu3 = enn.ReLU(self.conv3.out_type, inplace=True)
 
         self.downsample = downsample
 
@@ -402,25 +263,18 @@ class Bottleneck(enn.EquivariantModule):
         else:
             return input_shape
 
+    def export(self):
+        self.eval()
+        submodules = []
+        # convert all the submodules if necessary
+        for name, module in self._modules.items():
+            if hasattr(module, 'export'):
+                module = module.export()
+            submodules.append((name, module))
+        return torch.nn.ModuleDict(OrderedDict(submodules))
+
 
 def get_expansion(block, expansion=None):
-    """Get the expansion of a residual block.
-
-    The block expansion will be obtained by the following order:
-
-    1. If ``expansion`` is given, just return it.
-    2. If ``block`` has the attribute ``expansion``, then return
-       ``block.expansion``.
-    3. Return the default value according the the block type:
-       1 for ``BasicBlock`` and 4 for ``Bottleneck``.
-
-    Args:
-        block (class): The block class.
-        expansion (int | None): The given expansion ratio.
-
-    Returns:
-        int: The expansion of the block.
-    """
     if isinstance(expansion, int):
         assert expansion > 0
     elif expansion is None:
@@ -439,27 +293,6 @@ def get_expansion(block, expansion=None):
 
 
 class ResLayer(nn.Sequential):
-    """ResLayer to build ReResNet style backbone.
-
-    Args:
-        block (nn.Module): Residual block used to build ResLayer.
-        num_blocks (int): Number of blocks.
-        in_channels (int): Input channels of this block.
-        out_channels (int): Output channels of this block.
-        expansion (int, optional): The expansion for BasicBlock/Bottleneck.
-            If not specified, it will firstly be obtained via
-            ``block.expansion``. If the block has no attribute "expansion",
-            the following default values will be used: 1 for BasicBlock and
-            4 for Bottleneck. Default: None.
-        stride (int): stride of the first block. Default: 1.
-        avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck. Default: False
-        conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='BN')
-    """
-
     def __init__(self,
                  block,
                  num_blocks,
@@ -470,6 +303,8 @@ class ResLayer(nn.Sequential):
                  avg_down=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
+                 gspace=None,
+                 fixparams=False,
                  **kwargs):
         self.block = block
         self.expansion = get_expansion(block, expansion)
@@ -480,21 +315,18 @@ class ResLayer(nn.Sequential):
             conv_stride = stride
             if avg_down and stride != 1:
                 conv_stride = 1
+                in_type = FIELD_TYPE["regular"](
+                    gspace, in_channels, fixparams=fixparams)
                 downsample.append(
-                    ennAvgPool(
-                        in_channels,
+                    enn.PointwiseAvgPool(
+                        in_type,
                         kernel_size=stride,
                         stride=stride,
                         ceil_mode=True))
             downsample.extend([
-                build_conv_layer(
-                    conv_cfg,
-                    in_channels,
-                    out_channels,
-                    kernel_size=1,
-                    stride=conv_stride,
-                    bias=False),
-                build_norm_layer(norm_cfg, out_channels)[1]
+                conv1x1(gspace, in_channels, out_channels,
+                        stride=conv_stride, bias=False),
+                build_norm_layer(norm_cfg, gspace, out_channels)[1]
             ])
             downsample = enn.SequentialModule(*downsample)
 
@@ -508,6 +340,8 @@ class ResLayer(nn.Sequential):
                 downsample=downsample,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
+                gspace=gspace,
+                fixparams=fixparams,
                 **kwargs))
         in_channels = out_channels
         for i in range(1, num_blocks):
@@ -519,64 +353,24 @@ class ResLayer(nn.Sequential):
                     stride=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
+                    gspace=gspace,
+                    fixparams=fixparams,
                     **kwargs))
         super(ResLayer, self).__init__(*layers)
+
+    def export(self):
+        self.eval()
+        submodules = []
+        # convert all the submodules if necessary
+        for name, module in self._modules.items():
+            if hasattr(module, 'export'):
+                module = module.export()
+            submodules.append((name, module))
+        return torch.nn.ModuleDict(OrderedDict(submodules))
 
 
 @BACKBONES.register_module
 class ReResNet(BaseBackbone):
-    """ReResNet backbone.
-
-    Please refer to the `paper <https://arxiv.org/abs/1512.03385>`_ for
-    details.
-
-    Args:
-        depth (int): Network depth, from {18, 34, 50, 101, 152}.
-        in_channels (int): Number of input image channels. Default: 3.
-        stem_channels (int): Output channels of the stem layer. Default: 64.
-        base_channels (int): Middle channels of the first stage. Default: 64.
-        num_stages (int): Stages of the network. Default: 4.
-        strides (Sequence[int]): Strides of the first block of each stage.
-            Default: ``(1, 2, 2, 2)``.
-        dilations (Sequence[int]): Dilation of each stage.
-            Default: ``(1, 1, 1, 1)``.
-        out_indices (Sequence[int]): Output from which stages. If only one
-            stage is specified, a single tensor (feature map) is returned,
-            otherwise multiple stages are specified, a tuple of tensors will
-            be returned. Default: ``(3, )``.
-        style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
-            layer is the 3x3 conv layer, otherwise the stride-two layer is
-            the first 1x1 conv layer.
-        deep_stem (bool): Replace 7x7 conv in input stem with 3 3x3 conv.
-            Default: False.
-        avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck. Default: False.
-        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
-            -1 means not freezing any parameters. Default: -1.
-        conv_cfg (dict | None): The config dict for conv layers. Default: None.
-        norm_cfg (dict): The config dict for norm layers.
-        norm_eval (bool): Whether to set norm layers to eval mode, namely,
-            freeze running stats (mean and var). Note: Effect on Batch Norm
-            and its variants only. Default: False.
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed. Default: False.
-        zero_init_residual (bool): Whether to use zero init for last norm layer
-            in resblocks to let them behave as identity. Default: True.
-
-    Example:
-        >>> from mmcls.models import ReResNet
-        >>> import torch
-        >>> self = ReResNet(depth=18)
-        >>> self.eval()
-        >>> inputs = torch.rand(1, 3, 32, 32)
-        >>> level_outputs = self.forward(inputs)
-        >>> for level_out in level_outputs:
-        ...     print(tuple(level_out.shape))
-        (1, 64, 8, 8)
-        (1, 128, 4, 4)
-        (1, 256, 2, 2)
-        (1, 512, 1, 1)
-    """
 
     arch_settings = {
         18: (BasicBlock, (2, 2, 2, 2)),
@@ -604,9 +398,10 @@ class ReResNet(BaseBackbone):
                  norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=False,
                  with_cp=False,
-                 zero_init_residual=True):
+                 zero_init_residual=True,
+                 orientation=8,
+                 fixparams=False):
         super(ReResNet, self).__init__()
-        self.in_type = enn.FieldType(gspace, 3 * [gspace.trivial_repr])
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
         self.depth = depth
@@ -628,12 +423,17 @@ class ReResNet(BaseBackbone):
         self.with_cp = with_cp
         self.norm_eval = norm_eval
         self.zero_init_residual = zero_init_residual
-
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
         self.expansion = get_expansion(self.block, expansion)
 
-        self._make_stem_layer(in_channels, stem_channels)
+        self.orientation = orientation
+        self.fixparams = fixparams
+        self.gspace = gspaces.Rot2dOnR2(orientation)
+        self.in_type = enn.FieldType(
+            self.gspace, [self.gspace.trivial_repr] * 3)
+
+        self._make_stem_layer(self.gspace, in_channels, stem_channels)
 
         self.res_layers = []
         _in_channels = stem_channels
@@ -653,7 +453,9 @@ class ReResNet(BaseBackbone):
                 avg_down=self.avg_down,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg)
+                norm_cfg=norm_cfg,
+                gspace=self.gspace,
+                fixparams=self.fixparams)
             _in_channels = _out_channels
             _out_channels *= 2
             layer_name = f'layer{i + 1}'
@@ -671,14 +473,23 @@ class ReResNet(BaseBackbone):
     def norm1(self):
         return getattr(self, self.norm1_name)
 
-    def _make_stem_layer(self, in_channels, stem_channels):
+    def _make_stem_layer(self, gspace, in_channels, stem_channels):
         if not self.deep_stem:
-            self.conv1 = conv7x7(in_channels, stem_channels)
+            in_type = enn.FieldType(
+                gspace, in_channels * [gspace.trivial_repr])
+            out_type = FIELD_TYPE['regular'](gspace, stem_channels)
+            self.conv1 = enn.R2Conv(in_type, out_type, 7,
+                                    stride=2,
+                                    padding=3,
+                                    bias=False,
+                                    sigma=None,
+                                    frequencies_cutoff=lambda r: 3 * r)
             self.norm1_name, norm1 = build_norm_layer(
-                self.norm_cfg, stem_channels, postfix=1)
+                self.norm_cfg, gspace, stem_channels, postfix=1)
             self.add_module(self.norm1_name, norm1)
-            self.relu = ennReLU(stem_channels)
-        self.maxpool = ennMaxPool(stem_channels, kernel_size=3, stride=2, padding=1)
+            self.relu = enn.ReLU(self.conv1.out_type, inplace=True)
+        self.maxpool = enn.PointwiseMaxPool(
+            self.conv1.out_type, kernel_size=3, stride=2, padding=1)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
@@ -716,7 +527,6 @@ class ReResNet(BaseBackbone):
             x = res_layer(x)
             if i in self.out_indices:
                 outs.append(x)
-
         if len(outs) == 1:
             return outs[0]
         else:
@@ -730,3 +540,13 @@ class ReResNet(BaseBackbone):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+    def export(self):
+        self.eval()
+        submodules = []
+        # convert all the submodules if necessary
+        for name, module in self._modules.items():
+            if hasattr(module, 'export'):
+                module = module.export()
+            submodules.append((name, module))
+        return torch.nn.ModuleDict(OrderedDict(submodules))

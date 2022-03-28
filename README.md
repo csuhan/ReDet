@@ -18,9 +18,11 @@ More precisely, we incorporate rotation-equivariant networks into the detector t
 Based on the rotation-equivariant features, we also present Rotation-invariant RoI Align (RiRoI Align), which adaptively extracts rotation-invariant features from equivariant features according to the orientation of RoI.
 Extensive experiments on several challenging aerial image datasets DOTA-v1.0, DOTA-v1.5 and HRSC2016, show that our method can achieve state-of-the-art performance on the task of aerial object detection.
 Compared with previous best results, our ReDet gains 1.2, 3.5 and 2.6 mAP on DOTA-v1.0, DOTA-v1.5 and HRSC2016 respectively while reducing the number of parameters by 60% (313 Mb vs. 121 Mb).
+
 ## Changelog
 
-* **2021-04-13**. Update our [pretrained ReResNet](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view) and fix by [this commit](https://github.com/csuhan/ReDet/commit/88f8170db12a34ec342ab61571db217c9589888d). For the users that can not reach our reported mAP, please download it and train again.
+* **2022-03-28**. Speed up ReDet now! We convert the pre-trained weights of ReResNet+ReFPN to standard pytorch layers (see [GETTING_STARTED.md](GETTING_STARTED.md)). In the testing phase, you can directly use ResNet+FPN as the backbone of ReDet without compromising its rotation equivariance. Besides, you can also convert ReResNet to standard ResNet with [this script](https://github.com/csuhan/ReDet/blob/ReDet_mmcls/tools/convert_re_resnet_to_torch.py).
+* **2021-04-13**. Update our [pretrained ReResNet](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view) and fix by [this commit](https://github.com/csuhan/ReDet/commit/88f8170db12a34ec342ab61571db217c9589888d). If you cannot reach the reported mAP, please download it and try again.
 * **2021-03-09**. Code released.
 
 ## Benchmark and model zoo
@@ -64,7 +66,7 @@ Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage.
 
 ## Citation
 
-```
+```BibTeX
 @InProceedings{han2021ReDet,
     author    = {Han, Jiaming and Ding, Jian and Xue, Nan and Xia, Gui-Song},
     title     = {ReDet: A Rotation-equivariant Detector for Aerial Object Detection},
