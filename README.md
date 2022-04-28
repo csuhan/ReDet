@@ -37,7 +37,7 @@ If you want to train and use ReResNet in your own project, please check out [ReD
 |         Model                                               |Group      | Top-1 (%) | Top-5 (%) | Download |
 |:-----------------------------------------------------------:|:---------:|:---------:|:---------:|:--------:|
 | [ReR50](https://github.com/csuhan/ReDet/blob/ReDet_mmcls/configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     | [model](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing)|
-| [ReR101](https://github.com/csuhan/ReDet/blob/ReDet_mmcls/configs/re_resnet/re_resnet101_c8_batch256.py) |C<sub>8</sub>| 74.92     | 92.22     | [model](https://drive.google.com/file/d/1w1KGCzYFPIJjjVOR2FOGgytYu4oCrjAM/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1w1KGCzYFPIJjjVOR2FOGgytYu4oCrjAM/view?usp=sharing)|
+| [ReR101](https://github.com/csuhan/ReDet/blob/ReDet_mmcls/configs/re_resnet/re_resnet101_c8_batch256.py) |C<sub>8</sub>| 74.92     | 92.22     | [model](https://drive.google.com/file/d/1GmJzzHRgp5SvmGa6uj6n4GpCuYRT5RE9/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1w1KGCzYFPIJjjVOR2FOGgytYu4oCrjAM/view?usp=sharing)|
 
 
 * **Object Detection**
