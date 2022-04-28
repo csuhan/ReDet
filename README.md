@@ -9,7 +9,7 @@ The specific version is [4e6875d](https://github.com/open-mmlab/mmclassification
 |         Model                                               |Group      | Top-1 (%) | Top-5 (%) | Download |
 |:-----------------------------------------------------------:|:---------:|:---------:|:---------:|:--------:|
 | [ReResNet-50](configs/re_resnet/re_resnet50_c8_batch256.py) |C<sub>8</sub>| 71.20     | 90.28     |[raw](https://drive.google.com/file/d/1_d2igSp0wM8ypxTM1S14f5kCVjEyE6iI/view?usp=sharing) &#124; [publish](https://drive.google.com/file/d/1FshfREfLZaNl5FcaKrH0lxFyZt50Uyu2/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1VLW8YbU1kGpqd4hfvI9UItbCOprzo-v4/view?usp=sharing)|
-| [ReResNet-101](configs/re_resnet/re_resnet101_c8_batch256.py) |C<sub>8</sub>| 74.92     | 92.22     |[raw](https://drive.google.com/file/d/1_SDzcwuv_0IkPPJ5VmM9Hfhyz47BtHA3/view?usp=sharing) &#124; [publish](https://drive.google.com/file/d/1w1KGCzYFPIJjjVOR2FOGgytYu4oCrjAM/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1w1KGCzYFPIJjjVOR2FOGgytYu4oCrjAM/view?usp=sharing)|
+| [ReResNet-101](configs/re_resnet/re_resnet101_c8_batch256.py) |C<sub>8</sub>| 74.92     | 92.22     |[raw](https://drive.google.com/file/d/1_SDzcwuv_0IkPPJ5VmM9Hfhyz47BtHA3/view?usp=sharing) &#124; [publish](https://drive.google.com/file/d/1GmJzzHRgp5SvmGa6uj6n4GpCuYRT5RE9/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1w1KGCzYFPIJjjVOR2FOGgytYu4oCrjAM/view?usp=sharing)|
 
 
 **Note**:
